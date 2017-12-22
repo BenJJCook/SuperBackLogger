@@ -48,8 +48,9 @@ That's not how you use that command! Please use --help to get more information o
 """)
 
 argc = len(sys.argv)
-backlogInfoFile = 'backlogs.json'
-backlogDirectory = 'backlogs/'
+sDir = os.path.dirname(__file__)
+backlogInfoFile = sDir + '/backlogs.json'
+backlogDirectory = sDir + '/backlogs/'
 
 statusType = {
     0 : ("[CUSTOM]", Fore.MAGENTA),
