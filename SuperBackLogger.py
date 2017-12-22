@@ -146,7 +146,7 @@ def checkBacklog(backlogName):
                         statusText = statusType[status][0]
                         colour = statusType[status][1]
 
-                    print(('\t' + Fore.YELLOW + '{0:<15}' + colour + '{1:<10}').format(name, statusText))
+                    print(('\t' + Fore.YELLOW + '{0:<25}' + colour + '{1:<10}').format(name, statusText))
             else:
                 print('\tBacklog is empty!\n')
     except:
