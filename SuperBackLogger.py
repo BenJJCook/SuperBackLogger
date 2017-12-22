@@ -5,15 +5,20 @@ from colorama import Fore
 
 def displayHelp():
     print("""
-===============================
-SuperBackLogger v0.6 (22/12/2017)   
-    -   by Ben Cook
+===============================""" + 
+Fore.CYAN + """
+SuperBackLogger v0.9 (22/12/2017)""" +
+Fore.YELLOW + """
+    -   by Ben Cook""" +
+Fore.WHITE + """
 	
-An script to help you log all your gaming/movie/TV/music/reading endeavours.
+A script to help you log all your gaming/movie/TV/music/reading endeavours.
 	
     Usage:
-		
-        create <backlog name>                   -   Create a new backlog with the given name.
+
+        list                                    -   Lists all the backlogs in backlogs.json.
+
+        create <backlog name> [item]            -   Create a new backlog with the given name. Supply an optional item to find the specific status of that item.
         check <backlog name>                    -   Displays the backlog and the status of each item.
 
         add <backlog name> <item> [status]      -   Adds a new item to a backlog. Allows an optional custom status definition, otherwise defaults to [NOT DONE]
@@ -21,20 +26,19 @@ An script to help you log all your gaming/movie/TV/music/reading endeavours.
                                                     next level, up to [DONE]. A custom status can't be incremented and a new custom one must be provided in order
                                                     to replace it.
 
+        delete <backlog name>                   -   Deletes an entire backlog.
+        remove <backlog name> <item>            -   Removes an item from the backlog.
+        
+        reset <backlog name>                    -   Sets all items on list to [NOT DONE].
+
+
     FOLLOWING FUNCTIONS MAY BE TEMPORARY AND INTEGRATED IN TO 'UPDATE' LATER:
+        
         notdone <backlog name> <item>           -   Marks an item as [NOT DONE].
         inprogress <backlog name> <item>        -   Marks an item as [IN PROGRESS].
         done <backlog name> <item>              -   Marks an item as [DONE].
 
 
-    Currently unsupported but upcoming features for v1.0:
-        remove <backlog name> <item>            -   Removes an item from the backlog.
-        delete <backlog name>                   -   Deletes an entire backlog.
-        list                                    -   Lists all the backlogs in backlogs.json.
-        reset <backlog name>                    -   Sets all items on list to [NOT DONE].
-
-        check <backlog name> [item]             -   Integrates with regular 'check', returns the status of a single item.
-	
 ===============================
 """)
 
@@ -70,7 +74,7 @@ def getBacklogLocation(backlogName):
         with open(backlogInfoFile, 'r') as jsonFile:
             backlogList = json.load(jsonFile)
             if backlogName not in backlogList:
-                print('\n' + backlogName + ' does not exist!\n')
+                print('\n' + Fore.CYAN + backlogName + Fore.WHITE + ' does not exist!\n')
                 return False
             else:
                 backlogLocation = backlogList[backlogName]
@@ -127,9 +131,11 @@ def createBacklog(newBacklogName):
 
 
 def checkBacklog(backlogName):
+    pickItem = False
+    if argc > 3:
+        pickItem = sys.argv[3]
 
     backlogLocation = getBacklogLocation(backlogName)
-
     if not backlogLocation:
         return
 
@@ -139,6 +145,21 @@ def checkBacklog(backlogName):
             print('\n\t' + Fore.CYAN + '____' + backlogInfo['name'] + ' Backlog____\n')
 
             if len(backlogInfo['content']) > 0:
+
+                if pickItem:
+                    if pickItem in backlogInfo['content']:
+                        colour = Fore.MAGENTA
+                        status = backlogInfo['content'][pickItem]
+                        statusText = status
+                        if status in statusType:
+                            statusText = statusType[status][0]
+                            colour = statusType[status][1]
+                        print(('\t' + Fore.YELLOW + '{0:<25}' + colour + '{1:<10}').format(pickItem, statusText))
+                    else:
+                        print('\t' + Fore.YELLOW + pickItem + Fore.WHITE + ' is not in this backlog!')
+                    return
+
+
                 for name, status in backlogInfo['content'].items():
                     colour = Fore.MAGENTA
                     statusText = status;
@@ -148,7 +169,7 @@ def checkBacklog(backlogName):
 
                     print(('\t' + Fore.YELLOW + '{0:<25}' + colour + '{1:<10}').format(name, statusText))
             else:
-                print('\tBacklog is empty!\n')
+                print('\t' + Fore.WHITE + 'Backlog is empty!\n')
     except:
         backlogFileError(backlogLocation)
 
@@ -302,16 +323,126 @@ def markItemInProgress():
     except:
         backlogFileError(backlogLocation)
 
+def removeItem():
+    backlogName = sys.argv[2]
+    itemToDelete = sys.argv[3]
+
+    backlogLocation = getBacklogLocation(backlogName)
+    if not backlogLocation:
+        return
+
+    try:
+        with open(backlogLocation, 'r+') as jsonFile:
+            backlogInfo = json.load(jsonFile)
+            
+            if itemToDelete not in backlogInfo['content']:
+                print('\n' + Fore.YELLOW + itemToDelete + Fore.WHITE + ' isn\'t in ' + Fore.CYAN + backlogName + Fore.WHITE + '!')
+                return
+
+            backlogInfo['content'].pop(itemToDelete, None)
+            
+            jsonFile.seek(0)
+            json.dump(backlogInfo, jsonFile)
+            jsonFile.truncate()
+            
+            print('\n' + Fore.YELLOW + itemToDelete + Fore.WHITE + ' has been removed from ' + Fore.CYAN + backlogName + Fore.WHITE + '!')
+    except:
+        backlogFileError(backlogLocation)
+
+def deleteBacklog(backlogName):
+    backlogLocation = getBacklogLocation(backlogName)
+    if not backlogLocation:
+        return
+
+    oResponse = input('\nOnce you delete a backlog, you can\'t get it back!\nAre you sure you want to delete it? (y/n): ')
+    while oResponse.lower() not in ('yes', 'no', 'y', 'n'):
+        oResponse = input('\nInvalid response! Must be \'y\' or \'n\': ')
+    if oResponse.lower() in ('yes', 'y'):
+        print('\nOkay, deleting!')
+    else:
+        print('\nBacklog has not been deleted.')
+        return
+    
+    os.remove(backlogLocation)
+    print('\nBacklog deleted!')
+
+    try:
+        with open(backlogInfoFile, 'r+') as jsonFile:
+            backlogList = json.load(jsonFile)
+            backlogList.pop(backlogName, None)
+                    
+            jsonFile.seek(0)
+            json.dump(backlogList, jsonFile)
+            jsonFile.truncate()
+    except:
+        backlogInfoFileError()
+        return;
+
+def listBacklogs():
+    try:
+        with open(backlogInfoFile, 'r') as jsonFile:
+            backlogList = json.load(jsonFile)
+            
+            print(Fore.BLUE + '\t____Backlogs____\n')
+            
+            if len(backlogList) > 0:
+                for name, location in backlogList.items():
+                    print('\t' + Fore.CYAN + name)
+            else:
+                print('\t' + Fore.WHITE + 'You have no backlogs!')
+
+    except:
+        backlogInfoFileError()
+        return;
+    
+
+def resetBacklog(backlogName):
+    backlogLocation = getBacklogLocation(backlogName)
+    if not backlogLocation:
+        return
+
+    oResponse = input('\nBy resetting your backlog, all your progress will be reset to ' + Fore.RED + '[NOT DONE]' + Fore.WHITE + '!\nAre you sure you want to reset it? (y/n): ')
+    while oResponse.lower() not in ('yes', 'no', 'y', 'n'):
+        oResponse = input('\nInvalid response! Must be \'y\' or \'n\': ')
+    if oResponse.lower() in ('yes', 'y'):
+        print('\nOkay, resetting!')
+    else:
+        print('\nBacklog has not been reset.')
+        return
+
+    try:
+        with open(backlogLocation, 'r+') as jsonFile:
+            backlogInfo = json.load(jsonFile)
+            
+            for key, value in backlogInfo['content'].items():
+                backlogInfo['content'][key] = 1
+            
+            jsonFile.seek(0)
+            json.dump(backlogInfo, jsonFile)
+            jsonFile.truncate()
+            
+            print('\nAll items in ' + Fore.CYAN + backlogName + Fore.WHITE + ' have been reset to ' + Fore.RED + '[NOT DONE]' + Fore.WHITE + '.')
+    except:
+        backlogFileError(backlogLocation)
+
+
+
 
 
 def handleCommands():
     if sys.argv[1].lower() in ('-h', '--h', '-help', '--help'):
         displayHelp()
+    elif sys.argv[1] == 'list':
+        listBacklogs()
     elif argc > 2:
         if sys.argv[1] == 'create':
             createBacklog(sys.argv[2])
         elif sys.argv[1] == 'check':
             checkBacklog(sys.argv[2])
+        elif sys.argv[1] == 'delete':
+            deleteBacklog(sys.argv[2])
+        elif sys.argv[1] == 'reset':
+            resetBacklog(sys.argv[2])
         elif argc > 3:
             if sys.argv[1] == 'add':
                 addToBacklog()
@@ -323,6 +454,8 @@ def handleCommands():
                 markItemNotDone()
             elif sys.argv[1] == 'inprogress':
                 markItemInProgress()
+            elif sys.argv[1] == 'remove':
+                removeItem()
             else:
                 displayError()
         else:
