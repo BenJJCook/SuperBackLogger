@@ -155,20 +155,23 @@ def checkBacklog(backlogName):
                         if status in statusType:
                             statusText = statusType[status][0]
                             colour = statusType[status][1]
-                        print(('\t' + Fore.YELLOW + '{0:<25}' + colour + '{1:<10}').format(pickItem, statusText))
+                        print(('\t' + Fore.YELLOW + '{0:<25}\t' + colour + '{1:<10}').format(pickItem, statusText))
                     else:
                         print('\t' + Fore.YELLOW + pickItem + Fore.WHITE + ' is not in this backlog!')
                     return
 
 
                 for name, status in backlogInfo['content'].items():
+                    maxLength = max(map(len, backlogInfo['content']))
+
+
                     colour = Fore.MAGENTA
                     statusText = status;
                     if status in statusType:
                         statusText = statusType[status][0]
                         colour = statusType[status][1]
 
-                    print(('\t' + Fore.YELLOW + '{0:<25}' + colour + '{1:<10}').format(name, statusText))
+                    print(('\t' + Fore.YELLOW + '{0:<' + str(maxLength) + '}\t' + colour + '{1:<10}').format(name, statusText))
             else:
                 print('\t' + Fore.WHITE + 'Backlog is empty!\n')
     except:
